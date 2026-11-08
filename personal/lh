@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+#
+# Launch LearnHarness from the deployed worktree: snapshot data, start the
+# production Next server on 127.0.0.1:$LH_PORT against ~/LearnHarnessData,
+# open the Electron shell on it, stop the server when the shell quits.
+#
+#   lh              # (symlinked into ~/.local/bin by deploy.sh)
+#
+# The shell runs in LH_DEV_URL mode on purpose: the packaged app's
+# auto-updater would replace this build with the official release.
+
+set -euo pipefail
+HERE="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+source "$HERE/env.sh"
+ROOT="$(dirname "$HERE")"
+
+if lh_running; then
+	echo "LearnHarness is already running (port $LH_PORT)."
+	exit 0
+fi
+[ -f "$ROOT/.next/BUILD_ID" ] || die "no build in $ROOT — run personal/deploy.sh from the dev checkout"
+
+mkdir -p "$LH_DATA_DIR" "$LH_HOME/logs" "$LH_HOME/run"
+if [ ! -f "$LH_AUTH_FILE" ]; then
+	(umask 077 && echo '{}' >"$LH_AUTH_FILE")
+fi
+"$HERE/backup.sh" auto
+
+echo $$ >"$LH_PIDFILE"
+SERVER=""
+cleanup() {
+	if [ -n "$SERVER" ]; then
+		kill "$SERVER" 2>/dev/null || true
+		wait "$SERVER" 2>/dev/null || true
+	fi
+	# next start may leave a child holding the port
+	lsof -nP -tiTCP:"$LH_PORT" -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null || true
+	rm -f "$LH_PIDFILE"
+}
+trap cleanup EXIT
+trap 'exit 130' INT TERM HUP
+
+export LH_DATA_DIR LH_AUTH_FILE
+cd "$ROOT"
+echo "── $(date) · $(git rev-parse --short HEAD) ──" >>"$LH_HOME/logs/server.log"
+node_modules/.bin/next start -H 127.0.0.1 -p "$LH_PORT" >>"$LH_HOME/logs/server.log" 2>&1 &
+SERVER=$!
+
+URL="http://127.0.0.1:$LH_PORT"
+for _ in $(seq 120); do
+	curl -s -o /dev/null "$URL/" && break
+	kill -0 "$SERVER" 2>/dev/null || die "server exited — see $LH_HOME/logs/server.log"
+	sleep 0.5
+done
+curl -s -o /dev/null "$URL/" || die "server did not come up — see $LH_HOME/logs/server.log"
+
+echo "LearnHarness: $URL · data $LH_DATA_DIR"
+LH_DEV_URL="$URL" node_modules/.bin/electron . >>"$LH_HOME/logs/electron.log" 2>&1 || true
