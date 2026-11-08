@@ -85,5 +85,6 @@ if [ ! -d "$APP" ]; then
 	osacompile -o "$APP" -e "do shell script quoted form of \"$HOME/.local/bin/lh\" & \" >/dev/null 2>&1 &\""
 fi
 
+mkdir -p "$LH_HOME"
 echo "$(date '+%Y-%m-%d %H:%M:%S') ${SHA:0:12} $(git -C "$DEV" describe --tags --always "$SHA") (prev ${PREV:0:12})" >>"$LH_HOME/deployments.log"
 echo "deployed ${SHA:0:7} → $LIVE"
