@@ -55,4 +55,6 @@ done
 curl -s -o /dev/null "$URL/" || die "server did not come up — see $LH_HOME/logs/server.log"
 
 echo "LearnHarness: $URL · data $LH_DATA_DIR"
-LH_DEV_URL="$URL" node_modules/.bin/electron . >>"$LH_HOME/logs/electron.log" 2>&1 || true
+# Terminals inside VS Code (itself Electron) export ELECTRON_RUN_AS_NODE=1,
+# which would run the shell as plain Node.
+LH_DEV_URL="$URL" env -u ELECTRON_RUN_AS_NODE node_modules/.bin/electron . >>"$LH_HOME/logs/electron.log" 2>&1 || true
