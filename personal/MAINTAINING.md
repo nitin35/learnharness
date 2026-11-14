@@ -51,7 +51,10 @@ git fetch upstream --tags
 git log --oneline mine..upstream/main          # what's coming; read storage/format changes
 git checkout main && git merge --ff-only upstream/main && git push origin main
 git checkout mine && git rebase main           # resolve conflicts; keep personal commits small
-npm ci && npm run typecheck && npm run lint && npm test   # all offline, fake providers
+npm ci && npm run plugins:setup                # plugins:setup is required since v0.6
+npm run typecheck && npm run lint && npm test  # all offline, fake providers
+# data check: build here and boot a COPY of ~/LearnHarnessData/data on a spare
+# port; confirm existing chats load (never point at the real data dir)
 # optional: npm run dev:fresh  → poke the UI on scratch data
 git push --force-with-lease origin mine
 personal/deploy.sh                              # owner must have quit the app

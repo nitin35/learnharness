@@ -7,7 +7,7 @@
 #
 # Steps: refuse while the app runs → snapshot data → check out <ref>
 # (detached) in ../learnharness-live → npm ci if the lockfile changed →
-# next build → boot smoke on a scratch data dir → log. Any failure rolls
+# plugins:setup → build → boot smoke on a scratch data dir → log. Any failure rolls
 # the live worktree back to the previous commit and rebuilds it.
 # Real learning data is never read or written by the build or smoke.
 
@@ -43,6 +43,9 @@ build() {
 		(cd "$LIVE" && npm ci) || return 1
 		echo "$lockhash" >"$LIVE/node_modules/.lh-lockhash"
 	fi
+	# Source plugins (plugins/*) need their own SDKs and deps before build;
+	# cheap enough to rerun every deploy rather than track API changes.
+	(cd "$LIVE" && npm run plugins:setup) || return 1
 	(cd "$LIVE" && npm run build) || return 1
 }
 
