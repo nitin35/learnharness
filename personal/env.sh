@@ -14,6 +14,9 @@ LH_PORT="${LH_PORT:-3100}"
 LH_DATA_DIR="$LH_HOME/data"
 LH_AUTH_FILE="$LH_HOME/auth.json"
 LH_PIDFILE="$LH_HOME/run/lh.pid"
+# Present while deploy.sh is changing the live worktree; lh refuses to
+# start a half-deployed build (left behind if a deploy is interrupted).
+LH_DEPLOYING="$LH_HOME/run/deploying"
 
 # Finder/Dock launches get a minimal PATH; node lives in Homebrew.
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"

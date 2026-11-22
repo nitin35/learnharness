@@ -18,6 +18,7 @@ if lh_running; then
 	echo "LearnHarness is already running (port $LH_PORT)."
 	exit 0
 fi
+[ -f "$LH_DEPLOYING" ] && die "a deploy of $(cut -c1-7 "$LH_DEPLOYING") did not finish — ask Claude to rerun personal/deploy.sh"
 [ -f "$ROOT/.next/BUILD_ID" ] || die "no build in $ROOT — run personal/deploy.sh from the dev checkout"
 
 mkdir -p "$LH_DATA_DIR" "$LH_HOME/logs" "$LH_HOME/run"

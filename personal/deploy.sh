@@ -23,6 +23,9 @@ lh_running && die "quit LearnHarness first"
 
 "$HERE/backup.sh" "pre-deploy-${SHA:0:7}"
 
+mkdir -p "$LH_HOME/run"
+echo "$SHA" >"$LH_DEPLOYING"
+
 PREV=""
 if [ -d "$LIVE" ]; then
 	LIVE="$(cd "$LIVE" && pwd)"
@@ -76,6 +79,7 @@ if ! { build && smoke; }; then
 		git -C "$LIVE" reset -q --hard
 		git -C "$LIVE" checkout -q --detach "$PREV"
 		build || die "rollback build failed too — the live worktree needs attention"
+		rm -f "$LH_DEPLOYING"
 	fi
 	die "deploy of ${SHA:0:7} failed"
 fi
@@ -88,6 +92,6 @@ if [ ! -d "$APP" ]; then
 	osacompile -o "$APP" -e "do shell script quoted form of \"$HOME/.local/bin/lh\" & \" >/dev/null 2>&1 &\""
 fi
 
-mkdir -p "$LH_HOME"
+rm -f "$LH_DEPLOYING"
 echo "$(date '+%Y-%m-%d %H:%M:%S') ${SHA:0:12} $(git -C "$DEV" describe --tags --always "$SHA") (prev ${PREV:0:12})" >>"$LH_HOME/deployments.log"
 echo "deployed ${SHA:0:7} → $LIVE"
